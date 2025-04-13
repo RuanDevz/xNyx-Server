@@ -15,7 +15,7 @@ const isAdmin = async (req, res, next) => {
         }
 
 
-        next(); // Se o usuário for administrador, permitir a execução da rota
+        next();
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Erro interno do servidor" });

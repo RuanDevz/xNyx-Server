@@ -2,29 +2,28 @@ const express = require('express');
 const router = express.Router();
 const { Free } = require('../models');
 const slugify = require('slugify');
+const verifyToken = require('../Middleware/verifyToken');
+const isAdmin = require('../Middleware/isAdmin');
 
-router.post('/', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const freeContents = Array.isArray(req.body) ? req.body : [req.body];
-    const createdContents = [];
-
-    for (const content of freeContents) {
-      if (!content.slug) {
-        return res.status(400).json({ error: 'O campo "slug" é obrigatório.' });
-      }
-
-      const existingFree = await Free.findOne({ where: { slug: content.slug } });
-      if (existingFree) {
-        return res.status(409).json({ error: `O slug "${content.slug}" já está sendo utilizado.` });
-      }
-
-      const createdContent = await Free.create(content);
-      createdContents.push(createdContent);
-    }
-
-    res.status(201).json(createdContents);
+    const freeContents = await Free.findAll();
+    res.status(200).json(freeContents);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar os conteúdos gratuitos: ' + error.message });
+    res.status(500).json({ error: 'Erro ao buscar os conteúdos gratuitos: ' + error });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const freeContent = await Free.findByPk(id);
+    if (!freeContent) {
+      return res.status(404).json({ error: 'Conteúdo gratuito não encontrado' });
+    }
+    res.status(200).json(freeContent);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar o conteúdo gratuito' });
   }
 });
 
@@ -43,7 +42,6 @@ router.get('/slug/:slug', async (req, res) => {
   }
 });
 
-// Rota para contar as views de um conteúdo gratuito (mantendo a rota por ID)
 router.post('/:id/views', async (req, res) => {
   try {
     const { id } = req.params;
@@ -54,7 +52,6 @@ router.post('/:id/views', async (req, res) => {
     }
 
     await freeContent.increment('views');
-
     const updatedFreeContent = await Free.findByPk(id);
 
     res.status(200).json(updatedFreeContent);
@@ -63,8 +60,7 @@ router.post('/:id/views', async (req, res) => {
   }
 });
 
-// Criar (POST) - Adicionar um novo conteúdo gratuito ou múltiplos conteúdos com geração de slug
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const freeContents = Array.isArray(req.body) ? req.body : [req.body];
     const createdContents = [];
@@ -74,14 +70,11 @@ router.post('/', async (req, res) => {
       let count = 0;
       let originalSlug = slug;
 
-      while (true) {
-        const existingFree = await Free.findOne({ where: { slug } });
-        if (!existingFree) {
-          break;
-        }
+      while (await Free.findOne({ where: { slug } })) {
         count++;
         slug = `${originalSlug}-${count}`;
       }
+
       const createdContent = await Free.create({ ...content, slug });
       createdContents.push(createdContent);
     }
@@ -92,31 +85,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
-  try {
-    const freeContents = await Free.findAll();
-    res.status(200).json(freeContents);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar os conteúdos gratuitos: ' + error });
-  }
-});
-
-// Buscar um conteúdo gratuito por ID (GET) - Mantendo a rota por ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const freeContent = await Free.findByPk(id);
-    if (!freeContent) {
-      return res.status(404).json({ error: 'Conteúdo gratuito não encontrado' });
-    }
-    res.status(200).json(freeContent);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar o conteúdo gratuito' });
-  }
-});
-
-// Atualizar (PUT) - Atualizar conteúdo gratuito (mantendo a atualização sem alterar o slug automaticamente)
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, link, category, postDate } = req.body;
@@ -139,8 +108,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Deletar (DELETE) - Deletar conteúdo gratuito
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 

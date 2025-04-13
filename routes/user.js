@@ -4,13 +4,12 @@ const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const { sign } = require('jsonwebtoken');
 const Authmiddleware = require('../Middleware/Auth');
-const isAdmin = require('../Middleware/isAdmin'); // Importando o middleware de admin
+const isAdmin = require('../Middleware/isAdmin'); 
 const dotenv = require('dotenv');
-const { Op } = require("sequelize"); // Importe o Op
+const { Op } = require("sequelize"); 
 
 dotenv.config();
 
-// Rota para buscar todos os usuários (apenas admins podem acessar)
 router.get('/', Authmiddleware, isAdmin, async (req, res) => {
     try {
         const getallusers = await User.findAll();
@@ -30,15 +29,12 @@ router.post('/cancel-subscription', async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
   
-      // Verifica se o usuário tem uma assinatura associada
       if (!user.stripeSubscriptionId) {
         return res.status(400).json({ message: 'No subscription found to cancel.' });
       }
   
-      // Cancela a assinatura no Stripe
       const subscription = await stripe.subscriptions.del(user.stripeSubscriptionId);
   
-      // Remove o stripeSubscriptionId do banco de dados para evitar cobranças futuras
       await user.update({
         isVip: false,
         stripeSubscriptionId: null,
@@ -87,7 +83,6 @@ router.put('/disable-user/:email', Authmiddleware, isAdmin, async (req, res) => 
         return res.status(404).json({ error: "Usuário não encontrado!" });
       }
   
-      // Atualiza o usuário definindo isVip como false e isDisabled como true
       await user.update({ isVip: false, isDisabled: true });
   
       res.status(200).json({ message: "VIP desativado com sucesso!" });
@@ -100,11 +95,10 @@ router.put('/disable-user/:email', Authmiddleware, isAdmin, async (req, res) => 
   router.get('/vip-disabled-users', Authmiddleware, isAdmin, async (req, res) => {
     try {
       const vipDisabledUsers = await User.findAll({
-        where: { isDisabled: true },  // Alterado para isDisabled
-        attributes: ['id', 'name', 'email', 'vipExpirationDate', 'isDisabled']  // Alterado para isDisabled
+        where: { isDisabled: true },  
+        attributes: ['id', 'name', 'email', 'vipExpirationDate', 'isDisabled']  
       });
   
-      // Formata a data de expiração para string, se existir.
       const formattedUsers = vipDisabledUsers.map(user => ({
         id: user.id,
         name: user.name,
@@ -112,7 +106,7 @@ router.put('/disable-user/:email', Authmiddleware, isAdmin, async (req, res) => 
         vipExpirationDate: user.vipExpirationDate 
           ? user.vipExpirationDate.toISOString() 
           : "Não definida",
-        isDisabled: user.isDisabled  // Usando o campo isDisabled
+        isDisabled: user.isDisabled  
       }));
   
       res.status(200).json(formattedUsers);
@@ -142,7 +136,6 @@ router.get('/is-admin/:email', async (req, res) => {
   });
   
 
-// Rota para verificar o status VIP de um usuário pelo email
 router.get('/is-vip/:email', async (req, res) => {
     const { email } = req.params;
 
@@ -160,7 +153,6 @@ router.get('/is-vip/:email', async (req, res) => {
     }
 });
 
-// Rota para registrar um novo usuário
 router.post('/register', async (req, res) => {
     const { password, email, ...users } = req.body;
 
@@ -181,7 +173,6 @@ router.post('/register', async (req, res) => {
     res.status(201).json(createnewuser);
 });
 
-// Rota para login de usuário
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -196,7 +187,6 @@ router.post('/login', async (req, res) => {
     res.json({ token: accesstoken, name: user.name });
 });
 
-// Rota para o dashboard do usuário
 router.get('/dashboard', Authmiddleware, async (req, res) => {
     const userId = req.user.id;
 
@@ -218,7 +208,6 @@ router.get('/vip-users', Authmiddleware, isAdmin, async (req, res) => {
             attributes: ['name', 'email', 'vipExpirationDate'] // Seleciona apenas os campos necessários
         });
 
-        // Formata os dados para garantir que vipExpirationDate seja uma string
         const formattedVipUsers = vipUsers.map(user => ({
             name: user.name,
             email: user.email,
@@ -254,7 +243,7 @@ router.put('/remove-all-expired-vip', Authmiddleware, isAdmin, async (req, res) 
         const expiredUsers = await User.findAll({
             where: {
                 isVip: true,
-                vipExpirationDate: { [Op.lt]: new Date() } // Filtra apenas os vencidos
+                vipExpirationDate: { [Op.lt]: new Date() }
             }
         });
 
@@ -269,7 +258,6 @@ router.put('/remove-all-expired-vip', Authmiddleware, isAdmin, async (req, res) 
     }
 });
 
-// Rota para pegar dados do usuário logado
 router.get('/user-data', Authmiddleware, async (req, res) => {
     const userId = req.user.id;
 

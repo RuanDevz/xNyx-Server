@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { Vip } = require('../models');
+const isAdmin = require('../Middleware/isAdmin');
+const verifyToken = require('../Middleware/verifyToken');
 
-// Rota para buscar um conteúdo VIP por slug (GET)
 router.get('/slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
@@ -25,7 +26,6 @@ router.post('/:id/views', async (req, res) => {
       return res.status(404).json({ error: 'Conteúdo VIP não encontrado' });
     }
 
-    // Incrementa o contador de views
     await vipContent.increment('views');
 
     const updatedVipContent = await Vip.findByPk(id);
@@ -36,7 +36,7 @@ router.post('/:id/views', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const vipContents = Array.isArray(req.body) ? req.body : [req.body];
     const createdContents = [];
@@ -83,7 +83,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', isAdmin, verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, link, category, postDate, slug } = req.body;
@@ -114,7 +114,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', isAdmin, verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 
