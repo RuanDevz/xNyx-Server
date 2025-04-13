@@ -182,6 +182,8 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ error: "Credenciais incorretas!" });
     }
 
+    await user.update({ lastLogin: new Date() });
+
     const accesstoken = sign({ email: user.email, id: user.id }, process.env.TOKEN_VERIFY_ACCESS);
 
     res.json({ token: accesstoken, name: user.name });
@@ -205,13 +207,13 @@ router.get('/vip-users', Authmiddleware, isAdmin, async (req, res) => {
             where: {
                 isVip: true
             },
-            attributes: ['name', 'email', 'vipExpirationDate'] // Seleciona apenas os campos necessários
+            attributes: ['name', 'email', 'vipExpirationDate'] 
         });
 
         const formattedVipUsers = vipUsers.map(user => ({
             name: user.name,
             email: user.email,
-            vipExpirationDate: user.vipExpirationDate ? user.vipExpirationDate.toISOString() : 'Não definida' // Converte para string ou retorna uma mensagem
+            vipExpirationDate: user.vipExpirationDate ? user.vipExpirationDate.toISOString() : 'Não definida' 
         }));
 
         res.status(200).json(formattedVipUsers);
@@ -225,7 +227,7 @@ router.put('/remove-vip/:email', Authmiddleware, isAdmin, async (req, res) => {
     const { email } = req.params;
 
     try {
-        const user = await User.findOne({ where: { email } }); // Busca pelo email
+        const user = await User.findOne({ where: { email } }); 
         if (!user) {
             return res.status(404).json({ error: 'Usuário não encontrado!' });
         }
@@ -257,6 +259,52 @@ router.put('/remove-all-expired-vip', Authmiddleware, isAdmin, async (req, res) 
         res.status(500).json({ error: 'Erro ao remover VIPs vencidos.' });
     }
 });
+
+
+
+router.get('/last-login', Authmiddleware, async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado!' });
+        }
+
+        res.status(200).json({
+            name: user.name,
+            email: user.email,
+            lastLogin: user.lastLogin ? user.lastLogin.toISOString() : 'Nunca logado'
+        });
+    } catch (error) {
+        console.error("Erro ao buscar último login:", error);
+        res.status(500).json({ error: 'Erro ao buscar último login' });
+    }
+});
+
+router.get('/last-login/:email', Authmiddleware, isAdmin, async (req, res) => {
+    const { email } = req.params;
+
+    try {
+        const user = await User.findOne({ where: { email } });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado!' });
+        }
+
+        res.status(200).json({
+            name: user.name,
+            email: user.email,
+            lastLogin: user.lastLogin ? user.lastLogin.toISOString() : 'Nunca logado'
+        });
+    } catch (error) {
+        console.error("Erro ao buscar último login:", error);
+        res.status(500).json({ error: 'Erro ao buscar último login' });
+    }
+});
+
+
 
 router.get('/user-data', Authmiddleware, async (req, res) => {
     const userId = req.user.id;
