@@ -1,9 +1,8 @@
 // Exemplo com Express
 const express = require('express');
 const router = express.Router();
-const { FilterOption } = require('../models'); // Supondo que você tenha um modelo FilterOption configurado
+const { FilterOption } = require('../models'); 
 
-// Rota para obter opções de filtro
 router.get('/filter-options', async (req, res) => {
   try {
     const options = await FilterOption.findAll();
