@@ -98,7 +98,6 @@ router.put('/:id', async (req, res) => {
     vipContentToUpdate.category = category || vipContentToUpdate.category;
     vipContentToUpdate.postDate = postDate || vipContentToUpdate.postDate;
 
-    // Se um novo slug foi fornecido
     if (slug && slug !== vipContentToUpdate.slug) {
       const existingVipWithNewSlug = await Vip.findOne({ where: { slug } });
       if (existingVipWithNewSlug) {
