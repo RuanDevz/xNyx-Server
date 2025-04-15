@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    link2:{
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     category: {
       type: DataTypes.STRING,
       allowNull: false,

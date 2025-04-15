@@ -66,9 +66,12 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     const createdContents = [];
 
     for (const content of freeContents) {
-      let slug = slugify(content.name, { lower: true });
+      let slug = content.slug
+        ? slugify(content.slug, { lower: true })
+        : slugify(content.name, { lower: true });
+
       let count = 0;
-      let originalSlug = slug;
+      const originalSlug = slug;
 
       while (await Free.findOne({ where: { slug } })) {
         count++;
@@ -85,10 +88,11 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+
 router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, link, category, postDate } = req.body;
+    const { name, link, link2, category, postDate } = req.body;
 
     const freeContentToUpdate = await Free.findByPk(id);
     if (!freeContentToUpdate) {
@@ -97,6 +101,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
 
     freeContentToUpdate.name = name;
     freeContentToUpdate.link = link;
+    freeContentToUpdate.link2 = link2;
     freeContentToUpdate.category = category;
     freeContentToUpdate.postDate = postDate || freeContentToUpdate.postDate;
 
