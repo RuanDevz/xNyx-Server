@@ -92,7 +92,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
 router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, link, link2, category, postDate } = req.body;
+    const { name, link, link2, category, postDate, slug } = req.body;
 
     const freeContentToUpdate = await Free.findByPk(id);
     if (!freeContentToUpdate) {
@@ -104,6 +104,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     freeContentToUpdate.link2 = link2;
     freeContentToUpdate.category = category;
     freeContentToUpdate.postDate = postDate || freeContentToUpdate.postDate;
+    freeContentToUpdate.slug = slug
 
     await freeContentToUpdate.save();
 
