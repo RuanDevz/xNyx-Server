@@ -54,7 +54,7 @@ app.use('/admin/requests', RequestsRouter)
 app.use('/recommendations', recommendationsRouter);
 app.use('/filteroptions', FilteroptionsRouter)
 app.use('/webhook', stripeWebhookRouter);
-app.use('/auth', renewVipRouter); // Adicione ao prefixo /auth
+app.use('/auth', renewVipRouter); 
 
 
 const pool = new Pool({
