@@ -14,8 +14,8 @@
     "dialect": "mysql"
   },
  "production": {
-    "username": "postgres.bqdedlglxwlztmekassz",
-    "password": "Xnyxleaks1120",
+    "username": "postgres.wyqgcxjxxehejfekodis",
+    "password": "Xnyxteste",
     "database": "postgres",
     "host": "aws-0-sa-east-1.pooler.supabase.com",
     "port": 6543,

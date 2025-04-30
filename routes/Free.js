@@ -84,7 +84,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
 
     res.status(201).json(createdContents);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar os conteúdos gratuitos: ' + error.message });
+    res.status(500).json({ error: 'Erro ao criar os conteúdos gratuitos', details: error.errors || error.message });
   }
 });
 
