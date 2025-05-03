@@ -6,11 +6,17 @@ const { Pool } = require('pg');
 const app = express();
 
 
-app.use(cors())
+const corsOptions = {
+  origin: process.env.FRONTEND_URL && 'https://xnyxleaks.com',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
 
 const webhookRouter = require('./routes/webhook');
 app.use('/webhook', webhookRouter);
 
+// Aplicar JSON apenas onde permitido
 app.use((req, res, next) => {
   if (req.originalUrl === '/webhook') {
     next();
@@ -18,6 +24,9 @@ app.use((req, res, next) => {
     express.json()(req, res, next);
   }
 });
+
+// Cors depois do body-parser
+app.use(cors(corsOptions));
 
 const userRouter = require('./routes/user');
 const FreeRouter = require('./routes/Free');
