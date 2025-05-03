@@ -42,7 +42,7 @@ router.post(
         let newExpiration = new Date(now);
 
         if (priceId === process.env.STRIPE_PRICEID_MONTHLY) {
-          newExpiration.setDate(now.getDate());
+          newExpiration.setDate(now.getDate() + 30);
         } else if (priceId === process.env.STRIPE_PRICEID_ANNUAL) {
           newExpiration.setDate(now.getDate() + 365);
         } else {
