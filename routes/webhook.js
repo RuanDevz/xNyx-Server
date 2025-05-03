@@ -38,7 +38,6 @@ router.post(
           return res.status(404).send('Usuário não encontrado');
         }
 
-        // Define o novo vencimento VIP
         const now = new Date();
         let newExpiration = new Date(now);
 

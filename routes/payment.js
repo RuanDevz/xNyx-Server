@@ -5,7 +5,7 @@ const { User } = require('../models');
 
 const router = express.Router();
 
-router.post('/payment', async (req, res) => {
+router.post('/vip-payment', async (req, res) => {
     const { email, planType } = req.body;
 
     if (!email || !planType || !['monthly', 'annual'].includes(planType)) {
