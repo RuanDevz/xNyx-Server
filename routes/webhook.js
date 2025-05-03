@@ -42,7 +42,7 @@ router.post(
         let newExpiration = new Date(now);
 
         if (priceId === process.env.STRIPE_PRICEID_MONTHLY) {
-          newExpiration.setDate(now.getDate() + 30);
+          newExpiration.setDate(now.getDate());
         } else if (priceId === process.env.STRIPE_PRICEID_ANNUAL) {
           newExpiration.setDate(now.getDate() + 365);
         } else {
@@ -55,7 +55,6 @@ router.post(
           stripeSubscriptionId: session.subscription || null,
         });
 
-        console.log(`✅ VIP atualizado para ${user.email} até ${newExpiration}`);
         await sendConfirmationEmail(customerEmail);
 
         return res.status(200).send({ received: true });
