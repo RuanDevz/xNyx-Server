@@ -3,18 +3,23 @@ const cors = require('cors');
 const db = require('./models');
 require('dotenv').config();
 const { Pool } = require('pg');
-
-
 const app = express();
 
-app.use(express.json());
 
-app.use(cors({
-  origin: '*',
-  methods: 'GET,POST,PUT,DELETE',
-  credentials: true
-}));
+app.use(cors())
 
+const webhookRouter = require('./routes/webhook');
+app.use('/webhook', webhookRouter);
+
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
+
+// Rotas
 const userRouter = require('./routes/user');
 const FreeRouter = require('./routes/Free');
 const payRouter = require('./routes/payment');
@@ -25,12 +30,11 @@ const UpdateVipStatus = require('./routes/updatevipstatus');
 const StatsRouter = require('./routes/stats');  
 const RequestsRouter = require('./routes/requests');  
 const recommendationsRouter = require('./routes/recommendations');
-const FilteroptionsRouter = require('./routes/filter_options')
-const authRoutes = require('./routes/authRoutes')
-const stripeWebhookRouter =  require('./routes/stripewebhook')
+const FilteroptionsRouter = require('./routes/filter_options');
+const authRoutes = require('./routes/authRoutes');
 const renewVipRouter = require('./routes/Renewvip');
 
-
+app.use('/webhook', webhookRouter); 
 app.use('/auth', userRouter);
 app.use('/auth', authRoutes);
 app.use('/freecontent', FreeRouter);
@@ -40,13 +44,12 @@ app.use('/forgot-password', Forgotpass);
 app.use('/reset-password', ResetPasswordRouter);
 app.use('/update-vip-status', UpdateVipStatus);
 app.use('/api/stats', StatsRouter);  
-app.use('/admin/requests', RequestsRouter)
+app.use('/admin/requests', RequestsRouter);
 app.use('/recommendations', recommendationsRouter);
-app.use('/filteroptions', FilteroptionsRouter)
-app.use('/webhook', stripeWebhookRouter);
-app.use('/auth', renewVipRouter); 
+app.use('/filteroptions', FilteroptionsRouter);
+app.use('/auth', renewVipRouter);
 
-
+// Banco
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL, 
 });

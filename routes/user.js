@@ -194,12 +194,21 @@ router.get('/dashboard', Authmiddleware, async (req, res) => {
 
     try {
         const user = await User.findByPk(userId);
+
+        const now = new Date();
+        if (!user.vipExpirationDate || new Date(user.vipExpirationDate) < now) {
+            if (user.isVip) {
+                await user.update({ isVip: false });
+            }
+        }
+
         res.json(user);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Erro interno do servidor" });
     }
 });
+
 //
 router.get('/vip-users', Authmiddleware, isAdmin, async (req, res) => {
     try {
