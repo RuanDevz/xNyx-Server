@@ -6,12 +6,7 @@ const { Pool } = require('pg');
 const app = express();
 
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL && 'http://xnyxleaks.com',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
+app.use(cors())
 
 const webhookRouter = require('./routes/webhook');
 app.use('/webhook', webhookRouter);
@@ -24,8 +19,7 @@ app.use((req, res, next) => {
   }
 });
 
-app.use(cors(corsOptions));
-
+// Rotas
 const userRouter = require('./routes/user');
 const FreeRouter = require('./routes/Free');
 const payRouter = require('./routes/payment');
