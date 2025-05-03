@@ -19,7 +19,6 @@ app.use((req, res, next) => {
   }
 });
 
-// Rotas
 const userRouter = require('./routes/user');
 const FreeRouter = require('./routes/Free');
 const payRouter = require('./routes/payment');
@@ -34,7 +33,6 @@ const FilteroptionsRouter = require('./routes/filter_options');
 const authRoutes = require('./routes/authRoutes');
 const renewVipRouter = require('./routes/Renewvip');
 
-app.use('/webhook', webhookRouter); 
 app.use('/auth', userRouter);
 app.use('/auth', authRoutes);
 app.use('/freecontent', FreeRouter);
