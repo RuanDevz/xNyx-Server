@@ -56,7 +56,7 @@ router.post(
         });
 
         console.log(`✅ VIP atualizado para ${user.email} até ${newExpiration}`);
-        await sendConfirmationEmail(email);
+        await sendConfirmationEmail(customerEmail);
 
         return res.status(200).send({ received: true });
       } catch (err) {

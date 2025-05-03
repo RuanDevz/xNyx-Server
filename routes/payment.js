@@ -26,19 +26,23 @@ router.post('/vip-payment', async (req, res) => {
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: email, 
+            customer_email: email,
             line_items: [
-                {
-                    price: prices[planType],
-                    quantity: 1,
-                },
+              {
+                price: prices[planType],
+                quantity: 1,
+              },
             ],
             mode: 'subscription',
             success_url: `${process.env.FRONTEND_URL}/#/success`,
             cancel_url: `${process.env.FRONTEND_URL}/#/cancel`,
-        });
+            metadata: {
+              priceId: prices[planType],
+            },
+          });
 
         res.json({ url: session.url });
+        console.log(planType)
     } catch (error) {
         console.error('Erro ao criar sessão de checkout:', error.message, error.stack);
         res.status(500).json({ error: 'Erro ao criar sessão de checkout' });
