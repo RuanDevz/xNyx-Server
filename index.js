@@ -9,10 +9,8 @@ const app = express();
 app.use(cors())
 
 const webhookRouter = require('./routes/webhook');
-const cancelRouter = require('./routes/webhook');
 
 app.use('/webhook', webhookRouter)
-app.use('/cancel-subscription', cancelRouter);
 
 
 app.use((req, res, next) => {
