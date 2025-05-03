@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { User } = require('../models');
-const authMiddleware = require('../middlewares/auth'); // Certifique-se de importar corretamente
+const authMiddleware = require('../Middleware/Auth'); // Certifique-se de importar corretamente
 
 router.post('/', authMiddleware, async (req, res) => {
   const email = req.user.email;
