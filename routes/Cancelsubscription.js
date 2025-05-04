@@ -4,7 +4,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { User } = require('../models');
 const authenticate = require('../Middleware/Auth'); // se você tiver auth
 
-router.post('/cancel-subscription', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const user = req.user; 
 

@@ -35,8 +35,11 @@ const recommendationsRouter = require('./routes/recommendations');
 const FilteroptionsRouter = require('./routes/filter_options');
 const authRoutes = require('./routes/authRoutes');
 const renewVipRouter = require('./routes/Renewvip');
+const CancelRouter = require('./routes/webhook');
+
 
 app.use('/auth', userRouter);
+app.use('/cancel-subscription', CancelRouter);
 app.use('/auth', authRoutes);
 app.use('/freecontent', FreeRouter);
 app.use('/vipcontent', VipRouter);
