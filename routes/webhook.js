@@ -67,11 +67,8 @@ router.post(
 
         try {
           const user = await User.findOne({ where: { stripeSubscriptionId: stripeSubId } });
-
-          if (user) {
-            await user.update({ stripeSubscriptionId: null, isVip: false });
             console.log('Assinatura cancelada pelo webhook.');
-          }
+
         } catch (err) {
           console.error('Erro ao processar cancelamento:', err);
         }
