@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { User } = require('../models');
-const authenticate = require('../Middleware/Auth'); // se você tiver auth
+const Authmiddleware = require('../Middleware/Auth'); 
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', Authmiddleware, async (req, res) => {
   try {
     const user = req.user; 
 
