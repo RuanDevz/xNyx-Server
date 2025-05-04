@@ -33,7 +33,6 @@ router.post(
 
         try {
           const user = await User.findOne({ where: { email: customerEmail } });
-
           if (!user) return res.status(404).send('Usuário não encontrado');
 
           const now = new Date();
@@ -61,14 +60,59 @@ router.post(
         break;
       }
 
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        const subscriptionId = invoice.subscription;
+
+        try {
+          // Recupera a assinatura para pegar os priceId(s)
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const priceId = subscription.items.data[0].price.id;
+
+          // Encontra o usuário pelo subscriptionId
+          const user = await User.findOne({ where: { stripeSubscriptionId: subscriptionId } });
+          if (!user) {
+            console.error('Usuário com assinatura não encontrado');
+            break;
+          }
+
+          const now = new Date();
+          let newExpiration = new Date(now);
+
+          if (priceId === process.env.STRIPE_PRICEID_MONTHLY) {
+            newExpiration.setDate(now.getDate() + 30);
+          } else if (priceId === process.env.STRIPE_PRICEID_ANNUAL) {
+            newExpiration.setDate(now.getDate() + 365);
+          } else {
+            console.error('Plano não reconhecido para invoice.paid');
+            break;
+          }
+
+          await user.update({
+            isVip: true,
+            vipExpirationDate: newExpiration,
+          });
+
+          console.log(`✅ VIP atualizado após pagamento de invoice para: ${user.email}`);
+        } catch (err) {
+          console.error('Erro ao processar invoice.paid:', err);
+        }
+        break;
+      }
+
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const stripeSubId = subscription.id;
 
         try {
           const user = await User.findOne({ where: { stripeSubscriptionId: stripeSubId } });
-            console.log('Assinatura cancelada pelo webhook.');
-
+          if (user) {
+            await user.update({
+              stripeSubscriptionId: null,
+            });
+            console.log('❌ Assinatura cancelada, VIP removido do usuário:', user.email);
+          }
         } catch (err) {
           console.error('Erro ao processar cancelamento:', err);
         }
@@ -82,6 +126,7 @@ router.post(
     res.status(200).send({ received: true });
   }
 );
+
 
 
 module.exports = router;
