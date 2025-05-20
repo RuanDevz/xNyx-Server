@@ -40,7 +40,7 @@ router.post('/vip-payment', async (req, res) => {
               priceId: prices[planType],
             },
           });
-
+//
         res.json({ url: session.url });
         console.log(planType)
     } catch (error) {
