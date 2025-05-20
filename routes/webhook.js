@@ -66,7 +66,6 @@ router.post(
         const subscriptionId = invoice.subscription;
 
         try {
-          // Recupera a assinatura para pegar os priceId(s)
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0].price.id;
 

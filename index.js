@@ -21,6 +21,8 @@ app.use((req, res, next) => {
   }
 });
 
+const rateLimit = require('express-rate-limit');
+
 // Rotas
 const userRouter = require('./routes/user');
 const FreeRouter = require('./routes/Free');
@@ -36,13 +38,14 @@ const FilteroptionsRouter = require('./routes/filter_options');
 const authRoutes = require('./routes/authRoutes');
 const renewVipRouter = require('./routes/Renewvip');
 const CancelRouter = require('./routes/Cancelsubscription');
+const checkApiKey = require('./Middleware/Checkapikey');
 
 
 app.use('/auth', userRouter);
 app.use('/cancel-subscription', CancelRouter);
 app.use('/auth', authRoutes);
-app.use('/freecontent', FreeRouter);
-app.use('/vipcontent', VipRouter);
+app.use('/freecontent',checkApiKey, FreeRouter);
+app.use('/vipcontent', checkApiKey, VipRouter);
 app.use('/pay', payRouter);
 app.use('/forgot-password', Forgotpass);
 app.use('/reset-password', ResetPasswordRouter);
@@ -52,6 +55,47 @@ app.use('/admin/requests', RequestsRouter);
 app.use('/recommendations', recommendationsRouter);
 app.use('/filteroptions', FilteroptionsRouter);
 app.use('/auth', renewVipRouter);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: 'Ip Blocked.',
+});
+
+app.use(limiter); 
+
+app.use((req, res, next) => {
+  const ua = req.headers['user-agent'] || '';
+  if (/curl|wget|bot|spider/i.test(ua)) {
+    return res.status(403).send('Forbidden');
+  }
+  next();
+});
+
+app.use((req, res, next) => {
+  const url = decodeURIComponent(req.originalUrl);
+
+  const bloqueios = [
+    /\.bak$/i,
+    /\.old$/i,
+    /nice ports/i,
+    /trinity/i,
+    /\.git/i,
+    /\.env/i,
+    /wp-admin/i,
+    /phpmyadmin/i
+  ];
+
+  for (const pattern of bloqueios) {
+    if (pattern.test(url)) {
+      console.warn(`try suspect: ${url}`);
+      return res.status(403).send('Access denied.');
+    }
+  }
+
+  next();
+});
+
 
 // Banco
 const pool = new Pool({
