@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   const url = decodeURIComponent(req.originalUrl);
-
+//
   const bloqueios = [
     /\.bak$/i,
     /\.old$/i,
