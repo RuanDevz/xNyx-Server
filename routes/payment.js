@@ -34,11 +34,6 @@ router.post('/vip-payment', async (req, res) => {
               },
             ],
             mode: 'subscription',
-           discounts
-:         [{
-            coupon
-:            'promo_1RQi8JJycl4dGkMpNf2My0ng',
-               }],
             success_url: `${process.env.FRONTEND_URL}/#/success`,
             cancel_url: `${process.env.FRONTEND_URL}/#/cancel`,
             metadata: {
