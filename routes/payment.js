@@ -40,9 +40,7 @@ router.post('/vip-payment', async (req, res) => {
               priceId: prices[planType],
             },
           });
-//
         res.json({ url: session.url });
-        console.log(planType)
     } catch (error) {
         console.error('Erro ao criar sessão de checkout:', error.message, error.stack);
         res.status(500).json({ error: 'Erro ao criar sessão de checkout' });

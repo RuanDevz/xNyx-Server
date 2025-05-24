@@ -108,7 +108,7 @@ router.post(
           const user = await User.findOne({ where: { stripeSubscriptionId: stripeSubId } });
           if (user) {
             await user.update({
-              stripeSubscriptionId: null,
+              stripeSubscriptionId: 'Cancelled',
             });
             console.log('❌ Assinatura cancelada, VIP removido do usuário:', user.email);
           }

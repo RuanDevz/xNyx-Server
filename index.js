@@ -30,7 +30,6 @@ const payRouter = require('./routes/payment');
 const VipRouter = require('./routes/Vip');
 const Forgotpass = require('./routes/forgotpassword');
 const ResetPasswordRouter = require('./routes/resetpassword');
-const UpdateVipStatus = require('./routes/updatevipstatus');
 const StatsRouter = require('./routes/stats');  
 const RequestsRouter = require('./routes/requests');  
 const recommendationsRouter = require('./routes/recommendations');
@@ -49,12 +48,11 @@ app.use('/vipcontent', checkApiKey, VipRouter);
 app.use('/pay', payRouter);
 app.use('/forgot-password', Forgotpass);
 app.use('/reset-password', ResetPasswordRouter);
-app.use('/update-vip-status', UpdateVipStatus);
-app.use('/api/stats', StatsRouter);  
+app.use('/api/stats', checkApiKey, StatsRouter);  
 app.use('/admin/requests', RequestsRouter);
 app.use('/recommendations', recommendationsRouter);
 app.use('/filteroptions', FilteroptionsRouter);
-app.use('/auth', renewVipRouter);
+app.use('/auth', checkApiKey, renewVipRouter);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 

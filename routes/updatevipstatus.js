@@ -3,17 +3,15 @@ const { User } = require('../models');
 const moment = require('moment');
 const router = express.Router();
 
-// Função que recebe o tipo de plano e retorna a data de expiração correspondente
 const getVipExpirationDate = (planType) => {
   if (planType === 'monthly') {
-    return moment().add(1, 'month').toISOString(); // 30 dias para o plano mensal
+    return moment().add(1, 'month').toISOString(); 
   } else if (planType === 'annual') {
-    return moment().add(1, 'year').toISOString(); // 1 ano para o plano anual
+    return moment().add(1, 'year').toISOString();
   }
   throw new Error('Tipo de plano inválido');
 };
 
-// Rota para atualizar o status VIP
 router.post('/', async (req, res) => {
   const { email, planType } = req.body;
 
