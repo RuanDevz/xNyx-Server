@@ -137,7 +137,7 @@ router.post('/register', async (req, res) => {
             isVip: false,
             isAdmin: false
         });
-//
+
         res.status(201).json({
             name: createnewuser.name,
             email: createnewuser.email,
