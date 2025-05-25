@@ -6,6 +6,7 @@ const { Pool } = require('pg');
 const app = express();
 
 
+
 app.use(cors())
 
 const webhookRouter = require('./routes/webhook');
@@ -22,6 +23,11 @@ app.use((req, res, next) => {
 });
 
 const rateLimit = require('express-rate-limit');
+
+const protectPatterns = require('./Middleware/protectPatterns');
+const ipBlocker = require('./Middleware/ipBlocker');
+app.use(ipBlocker);
+app.use(protectPatterns); // de preferência antes das rotas
 
 // Rotas
 const userRouter = require('./routes/user');
