@@ -27,7 +27,7 @@ const rateLimit = require('express-rate-limit');
 const protectPatterns = require('./Middleware/protectPatterns');
 const ipBlocker = require('./Middleware/ipBlocker');
 app.use(ipBlocker);
-app.use(protectPatterns); // de preferência antes das rotas
+app.use(protectPatterns); 
 
 // Rotas
 const userRouter = require('./routes/user');
