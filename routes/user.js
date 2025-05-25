@@ -195,7 +195,7 @@ router.get('/dashboard', Authmiddleware, async (req, res) => {
 });
 
 
-//
+
 router.get('/vip-users', Authmiddleware, isAdmin, async (req, res) => {
     try {
         const vipUsers = await User.findAll({
