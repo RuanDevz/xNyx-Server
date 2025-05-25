@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const { sign } = require('jsonwebtoken');
 const Authmiddleware = require('../Middleware/Auth');
 const isAdmin = require('../Middleware/isAdmin'); 
+const verifyToken = require('../Middleware/verifyToken')
 const dotenv = require('dotenv');
 const { Op } = require("sequelize"); 
 
@@ -33,11 +34,11 @@ router.post('/cancel-subscription', async (req, res) => {
         return res.status(400).json({ message: 'No subscription found to cancel.' });
       }
   
-      const subscription = await stripe.subscriptions.del(user.stripeSubscriptionId);
+        await stripe.subscriptions.del(user.stripeSubscriptionId);
   
       await user.update({
         isVip: false,
-        stripeSubscriptionId: null,
+        stripeSubscriptionId: 'Cancelled',
       });
   
       res.status(200).json({
@@ -116,62 +117,34 @@ router.put('/disable-user/:email', Authmiddleware, isAdmin, async (req, res) => 
     }
   });
   
-  
-
-router.get('/is-admin/:email', async (req, res) => {
-    const { email } = req.params;
-  
-    try {
-      const user = await User.findOne({ where: { email } });
-  
-      if (!user) {
-        return res.status(404).json({ error: 'Usuário não encontrado!' });
-      }
-  
-      res.status(200).json({ isAdmin: user.isAdmin });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao verificar status de admin' });
-    }
-  });
-  
-
-router.get('/is-vip/:email', async (req, res) => {
-    const { email } = req.params;
-
-    try {
-        const user = await User.findOne({ where: { email } });
-
-        if (!user) {
-            return res.status(404).json({ error: 'Usuário não encontrado!' });
-        }
-
-        res.status(200).json({ isVip: user.isVip });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao verificar status VIP' });
-    }
-});
 
 router.post('/register', async (req, res) => {
-    const { password, email, ...users } = req.body;
+  try {
+    const { password, email, name } = req.body;
 
-    const hashpassword = await bcrypt.hash(password, 10);
-
-    const existingemail = await User.findOne({ where: { email } });
-
-    if (existingemail) {
-        return res.status(409).json({ error: 'Email já cadastrado!' });
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Email já cadastrado!' });
     }
 
-    const createnewuser = await User.create({
-        ...users,
-        email,
-        password: hashpassword,
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      isAdmin: false, 
+      isVip: false,  
     });
 
-    res.status(201).json(createnewuser);
+    res.status(201).json({ message: 'Usuário criado com sucesso!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao registrar usuário' });
+  }
 });
+
+
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -201,13 +174,18 @@ router.get('/dashboard', Authmiddleware, async (req, res) => {
                 await user.update({ isVip: false });
             }
         }
-
-        res.json(user);
+        return res.json({
+            name: user.name,
+            email: user.email,
+            isVip: user.isVip,
+            isAdmin: user.isAdmin,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Erro interno do servidor" });
     }
 });
+
 
 //
 router.get('/vip-users', Authmiddleware, isAdmin, async (req, res) => {

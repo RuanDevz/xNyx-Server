@@ -46,17 +46,17 @@ const CancelRouter = require('./routes/Cancelsubscription');
 const checkApiKey = require('./Middleware/Checkapikey');
 
 
-app.use('/auth', userRouter);
-app.use('/cancel-subscription', CancelRouter);
-app.use('/auth', authRoutes);
+app.use('/auth', checkApiKey, userRouter);
+app.use('/cancel-subscription', checkApiKey, CancelRouter);
+app.use('/auth', checkApiKey, authRoutes);
 app.use('/freecontent',checkApiKey, FreeRouter);
 app.use('/vipcontent', checkApiKey, VipRouter);
-app.use('/pay', payRouter);
-app.use('/forgot-password', Forgotpass);
-app.use('/reset-password', ResetPasswordRouter);
+app.use('/pay', checkApiKey, payRouter);
+app.use('/forgot-password',checkApiKey, Forgotpass);
+app.use('/reset-password', checkApiKey, ResetPasswordRouter);
 app.use('/api/stats', checkApiKey, StatsRouter);  
-app.use('/admin/requests', RequestsRouter);
-app.use('/recommendations', recommendationsRouter);
+app.use('/admin/requests', checkApiKey, RequestsRouter);
+app.use('/recommendations', checkApiKey, recommendationsRouter);
 app.use('/filteroptions', FilteroptionsRouter);
 app.use('/auth', checkApiKey, renewVipRouter);
 
