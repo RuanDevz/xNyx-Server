@@ -183,6 +183,10 @@ router.get('/dashboard', Authmiddleware, async (req, res) => {
             email: user.email,
             isVip: user.isVip,
             isAdmin: user.isAdmin,
+            vipExpirationDate: user.vipExpirationDate,
+            lastLogin: user.lastLogin,
+            recentlyViewed: user.recentlyViewed,
+            createdAt: user.createdAt
         });
     } catch (error) {
         console.error(error);
