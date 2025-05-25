@@ -119,29 +119,33 @@ router.put('/disable-user/:email', Authmiddleware, isAdmin, async (req, res) => 
   
 
 router.post('/register', async (req, res) => {
-  try {
-    const { password, email, name } = req.body;
+    const { name, email, password } = req.body;
 
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail) {
-      return res.status(409).json({ error: 'Email já cadastrado!' });
+    try {
+        const hashpassword = await bcrypt.hash(password, 10);
+
+        const existingemail = await User.findOne({ where: { email } });
+
+        if (existingemail) {
+            return res.status(409).json({ error: 'Email já cadastrado!' });
+        }
+
+        const createnewuser = await User.create({
+            name,
+            email,
+            password: hashpassword,
+            isVip: false,
+            isAdmin: false
+        });
+//
+        res.status(201).json({
+            name: createnewuser.name,
+            email: createnewuser.email,
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao registrar usuário.' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      isAdmin: false, 
-      isVip: false,  
-    });
-
-    res.status(201).json({ message: 'Usuário criado com sucesso!' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao registrar usuário' });
-  }
 });
 
 
