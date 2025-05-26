@@ -99,7 +99,6 @@ app.use((req, res, next) => {
 });
 
 
-// Banco
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL, 
 });
