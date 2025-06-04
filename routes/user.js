@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt');
 const { sign } = require('jsonwebtoken');
 const Authmiddleware = require('../Middleware/Auth');
 const isAdmin = require('../Middleware/isAdmin'); 
-const verifyToken = require('../Middleware/verifyToken')
 const dotenv = require('dotenv');
 const { Op } = require("sequelize"); 
 

@@ -5,14 +5,122 @@ const slugify = require('slugify');
 const verifyToken = require('../Middleware/verifyToken');
 const isAdmin = require('../Middleware/isAdmin');
 
-router.get('/', async (req, res) => {
+// Rota para buscar com paginação (24 conteúdos por página)
+router.get('/search', async (req, res) => {
   try {
-    const freeContents = await Free.findAll();
-    res.status(200).json(freeContents);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { search, category, month, sortBy = 'mostRecent' } = req.query;
+
+    const where = {};
+    if (search) {
+      where.name = { [Op.iLike]: `%${search}%` };
+    }
+    if (category) {
+      where.category = category;
+    }
+    if (month) {
+      where.postDate = {
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn('EXTRACT', Sequelize.literal('MONTH FROM "postDate"')),
+            month
+          )
+        ]
+      };
+    }
+
+    let order;
+    switch (sortBy) {
+      case "mostViewed":
+        order = [["views", "DESC"]];
+        break;
+      case "alphabetical":
+        order = [["name", "ASC"]];
+        break;
+      case "oldContent":
+        order = [["postDate", "ASC"]];
+        break;
+      case "mostRecent":
+      default:
+        order = [["postDate", "DESC"]];
+        break;
+    }
+
+    const { count, rows } = await Free.findAndCountAll({
+      where,
+      order,
+      limit,
+      offset
+    });
+
+    const payload = {
+      page,
+      perPage: limit,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+      data: rows
+    };
+
+    return res.status(200).json(payload);
+
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar os conteúdos gratuitos: ' + error });
+    res.status(500).json({ error: 'Erro ao buscar conteúdos: ' + error.message });
   }
 });
+
+
+
+// rota GET /
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 900;
+    const offset = (page - 1) * limit;
+
+    const { sortBy = 'mostRecent' } = req.query;
+
+    let order;
+    switch (sortBy) {
+      case "mostViewed":
+        order = [["views", "DESC"]];
+        break;
+      case "alphabetical":
+        order = [["name", "ASC"]];
+        break;
+      case "oldContent":
+        order = [["postDate", "ASC"]];
+        break;
+      case "mostRecent":
+      default:
+        order = [["postDate", "DESC"]];
+        break;
+    }
+
+    const freeContents = await Free.findAll({
+      limit,
+      offset,
+      order,
+    });
+
+    const payload = {
+      page,
+      perPage: limit,
+      data: freeContents,
+    };
+
+    res.status(200).json(payload);
+
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar os conteúdos gratuitos: ' + error.message });
+  }
+});
+
+
+
+
 
 router.get('/:id', async (req, res) => {
   try {

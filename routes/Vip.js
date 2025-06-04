@@ -17,6 +17,125 @@ router.get('/slug/:slug', async (req, res) => {
   }
 });
 
+router.get('/search', async (req, res) => {
+  try {
+    const {
+      search,
+      category,
+      month,
+      sortBy = 'mostRecent',
+      page = 1,
+      limit = 24
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const whereClause = {};
+
+    if (search) {
+      whereClause.name = {
+        [Op.iLike]: `%${search}%`
+      };
+    }
+
+    if (category) {
+      whereClause.category = category;
+    }
+
+    if (month) {
+      whereClause.postDate = {
+        [Op.and]: [
+          Sequelize.where(
+            Sequelize.fn('date_part', 'month', Sequelize.col('postDate')),
+            month
+          )
+        ]
+      };
+    }
+
+    let order;
+    switch (sortBy) {
+      case "mostViewed":
+        order = [["views", "DESC"]];
+        break;
+      case "alphabetical":
+        order = [["name", "ASC"]];
+        break;
+      case "oldContent":
+        order = [["postDate", "ASC"]];
+        break;
+      case "mostRecent":
+      default:
+        order = [["postDate", "DESC"]];
+        break;
+    }
+
+    const vipContents = await Vip.findAll({
+      where: whereClause,
+      order,
+      limit,
+      offset
+    });
+
+    const total = await Vip.count({ where: whereClause });
+
+    const response = {
+      page: parseInt(page),
+      perPage: parseInt(limit),
+      total,
+      totalPages: Math.ceil(total / limit),
+      data: vipContents
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar os conteúdos VIP: ' + error.message });
+  }
+});
+
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 24;
+    const offset = (page - 1) * limit;
+
+    const { sortBy = 'mostRecent' } = req.query;
+
+    let order;
+    switch (sortBy) {
+      case "mostViewed":
+        order = [["views", "DESC"]];
+        break;
+      case "alphabetical":
+        order = [["name", "ASC"]];
+        break;
+      case "oldContent":
+        order = [["postDate", "ASC"]];
+        break;
+      case "mostRecent":
+      default:
+        order = [["postDate", "DESC"]];
+        break;
+    }
+
+    const vipContents = await Vip.findAll({
+      limit,
+      offset,
+      order
+    });
+
+    const response = {
+      page,
+      perPage: limit,
+      data: vipContents
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar os conteúdos VIP: ' + error.message });
+  }
+});
+
+
 router.post('/:id/views', async (req, res) => {
   try {
     const { id } = req.params;
@@ -58,15 +177,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     res.status(201).json(createdContents);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar os conteúdos VIP', details: error.errors || error.message });
-  }
-});
-
-router.get('/', async (req, res) => {
-  try {
-    const vipContents = await Vip.findAll();
-    res.status(200).json(vipContents);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar os conteúdos VIP: ' + error.message });
   }
 });
 
