@@ -43,6 +43,8 @@ const renewVipRouter = require('./routes/Renewvip');
 const CancelRouter = require('./routes/Cancelsubscription');
 const checkApiKey = require('./Middleware/Checkapikey');
 const contentRouter = require('./routes/content')
+const reportRouter = require('./routes/Report')
+
 
 
 app.use('/auth', checkApiKey, userRouter);
@@ -59,6 +61,8 @@ app.use('/recommendations', recommendationsRouter);
 app.use('/filteroptions', FilteroptionsRouter);
 app.use('/auth', checkApiKey, renewVipRouter);
 app.use('/content', checkApiKey, contentRouter)
+app.use('/reports', checkApiKey, reportRouter)
+
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 

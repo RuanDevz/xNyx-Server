@@ -4,9 +4,46 @@ const { Free } = require('../models');
 const slugify = require('slugify');
 const verifyToken = require('../Middleware/verifyToken');
 const isAdmin = require('../Middleware/isAdmin');
+const { Op, Sequelize } = require('sequelize');
 
-// Rota para buscar com paginação (24 conteúdos por página)
-router.get('/search', async (req, res) => {
+// Função para codificar resposta: base64 + inserção de letras alternadas
+function encodeResponse(data) {
+  // Converter para JSON string
+  const jsonString = JSON.stringify(data);
+  
+  // Codificar em base64
+  const base64 = Buffer.from(jsonString, 'utf8').toString('base64');
+  
+  // Inserir letras minúsculas alternadamente
+  let encoded = '';
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  
+  for (let i = 0; i < base64.length; i++) {
+    encoded += base64[i];
+    // Inserir letra aleatória após cada caractere (exceto o último)
+    if (i < base64.length - 1) {
+      const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+      encoded += randomLetter;
+    }
+  }
+  
+  return encoded;
+}
+
+// Middleware para codificar resposta JSON
+function encryptResponse(req, res, next) {
+  const originalJson = res.json.bind(res);
+
+  res.json = (data) => {
+    const encoded = encodeResponse(data);
+    originalJson({ data: encoded });
+  };
+
+  next();
+}
+
+// Aplicar codificação somente nas rotas GET
+router.get('/search', encryptResponse, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -15,37 +52,23 @@ router.get('/search', async (req, res) => {
     const { search, category, month, sortBy = 'mostRecent' } = req.query;
 
     const where = {};
-    if (search) {
-      where.name = { [Op.iLike]: `%${search}%` };
-    }
-    if (category) {
-      where.category = category;
-    }
+    if (search) where.name = { [Op.iLike]: `%${search}%` };
+    if (category) where.category = category;
     if (month) {
-      where.postDate = {
-        [Op.and]: [
-          Sequelize.where(
-            Sequelize.fn('EXTRACT', Sequelize.literal('MONTH FROM "postDate"')),
-            month
-          )
-        ]
-      };
+      where.createdAt = Sequelize.where(
+        Sequelize.fn('date_part', 'month', Sequelize.col('createdAt')),
+        month
+      );
     }
 
     let order;
     switch (sortBy) {
-      case "mostViewed":
-        order = [["views", "DESC"]];
-        break;
-      case "alphabetical":
-        order = [["name", "ASC"]];
-        break;
-      case "oldContent":
-        order = [["postDate", "ASC"]];
-        break;
-      case "mostRecent":
+      case 'mostViewed': order = [['views', 'DESC']]; break;
+      case 'alphabetical': order = [['name', 'ASC']]; break;
+      case 'oldContent': order = [['createdAt', 'ASC']]; break;
+      case 'mostRecent':
       default:
-        order = [["postDate", "DESC"]];
+        order = [['createdAt', 'DESC']];
         break;
     }
 
@@ -65,16 +88,12 @@ router.get('/search', async (req, res) => {
     };
 
     return res.status(200).json(payload);
-
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar conteúdos: ' + error.message });
   }
 });
 
-
-
-// rota GET /
-router.get('/', async (req, res) => {
+router.get('/', encryptResponse, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 900;
@@ -84,18 +103,12 @@ router.get('/', async (req, res) => {
 
     let order;
     switch (sortBy) {
-      case "mostViewed":
-        order = [["views", "DESC"]];
-        break;
-      case "alphabetical":
-        order = [["name", "ASC"]];
-        break;
-      case "oldContent":
-        order = [["postDate", "ASC"]];
-        break;
-      case "mostRecent":
+      case 'mostViewed': order = [['views', 'DESC']]; break;
+      case 'alphabetical': order = [['name', 'ASC']]; break;
+      case 'oldContent': order = [['createdAt', 'ASC']]; break;
+      case 'mostRecent':
       default:
-        order = [["postDate", "DESC"]];
+        order = [['createdAt', 'DESC']];
         break;
     }
 
@@ -112,17 +125,12 @@ router.get('/', async (req, res) => {
     };
 
     res.status(200).json(payload);
-
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar os conteúdos gratuitos: ' + error.message });
   }
 });
 
-
-
-
-
-router.get('/:id', async (req, res) => {
+router.get('/:id', encryptResponse, async (req, res) => {
   try {
     const { id } = req.params;
     const freeContent = await Free.findByPk(id);
@@ -135,7 +143,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.get('/slug/:slug', async (req, res) => {
+router.get('/slug/:slug', encryptResponse, async (req, res) => {
   const { slug } = req.params;
   try {
     const freeContent = await Free.findOne({ where: { slug } });
@@ -150,6 +158,7 @@ router.get('/slug/:slug', async (req, res) => {
   }
 });
 
+// POST, PUT, DELETE não codificados
 router.post('/:id/views', async (req, res) => {
   try {
     const { id } = req.params;
@@ -196,11 +205,10 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-
 router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, link, link2, category, postDate, slug } = req.body;
+    const { name, link, link2, category, createdAt, slug } = req.body;
 
     const freeContentToUpdate = await Free.findByPk(id);
     if (!freeContentToUpdate) {
@@ -211,8 +219,8 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     freeContentToUpdate.link = link;
     freeContentToUpdate.link2 = link2;
     freeContentToUpdate.category = category;
-    freeContentToUpdate.postDate = postDate || freeContentToUpdate.postDate;
-    freeContentToUpdate.slug = slug
+    freeContentToUpdate.createdAt = createdAt || freeContentToUpdate.createdAt;
+    freeContentToUpdate.slug = slug;
 
     await freeContentToUpdate.save();
 

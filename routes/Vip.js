@@ -3,8 +3,46 @@ const router = express.Router();
 const { Vip } = require('../models');
 const isAdmin = require('../Middleware/isAdmin');
 const verifyToken = require('../Middleware/verifyToken');
+const { Op, Sequelize } = require('sequelize');
 
-router.get('/slug/:slug', async (req, res) => {
+// Função para codificar resposta: base64 + inserção de letras alternadas
+function encodeResponse(data) {
+  // Converter para JSON string
+  const jsonString = JSON.stringify(data);
+  
+  // Codificar em base64
+  const base64 = Buffer.from(jsonString, 'utf8').toString('base64');
+  
+  // Inserir letras minúsculas alternadamente
+  let encoded = '';
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  
+  for (let i = 0; i < base64.length; i++) {
+    encoded += base64[i];
+    // Inserir letra aleatória após cada caractere (exceto o último)
+    if (i < base64.length - 1) {
+      const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+      encoded += randomLetter;
+    }
+  }
+  
+  return encoded;
+}
+
+// Middleware para codificar resposta JSON
+function encryptResponse(req, res, next) {
+  const originalJson = res.json.bind(res);
+
+  res.json = (data) => {
+    const encoded = encodeResponse(data);
+    originalJson({ data: encoded });
+  };
+
+  next();
+}
+
+// Aplicar codificação somente nas rotas GET
+router.get('/slug/:slug', encryptResponse, async (req, res) => {
   try {
     const { slug } = req.params;
     const vipContent = await Vip.findOne({ where: { slug } });
@@ -17,7 +55,7 @@ router.get('/slug/:slug', async (req, res) => {
   }
 });
 
-router.get('/search', async (req, res) => {
+router.get('/search', encryptResponse, async (req, res) => {
   try {
     const {
       search,
@@ -42,14 +80,10 @@ router.get('/search', async (req, res) => {
     }
 
     if (month) {
-      whereClause.postDate = {
-        [Op.and]: [
-          Sequelize.where(
-            Sequelize.fn('date_part', 'month', Sequelize.col('postDate')),
-            month
-          )
-        ]
-      };
+      whereClause.createdAt = Sequelize.where(
+        Sequelize.fn('date_part', 'month', Sequelize.col('createdAt')),
+        month
+      );
     }
 
     let order;
@@ -61,29 +95,27 @@ router.get('/search', async (req, res) => {
         order = [["name", "ASC"]];
         break;
       case "oldContent":
-        order = [["postDate", "ASC"]];
+        order = [["createdAt", "ASC"]];
         break;
       case "mostRecent":
       default:
-        order = [["postDate", "DESC"]];
+        order = [["createdAt", "DESC"]];
         break;
     }
 
-    const vipContents = await Vip.findAll({
+    const { count, rows } = await Vip.findAndCountAll({
       where: whereClause,
       order,
-      limit,
-      offset
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     });
-
-    const total = await Vip.count({ where: whereClause });
 
     const response = {
       page: parseInt(page),
       perPage: parseInt(limit),
-      total,
-      totalPages: Math.ceil(total / limit),
-      data: vipContents
+      total: count,
+      totalPages: Math.ceil(count / limit),
+      data: rows
     };
 
     res.status(200).json(response);
@@ -92,7 +124,7 @@ router.get('/search', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', encryptResponse, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 24;
@@ -109,11 +141,11 @@ router.get('/', async (req, res) => {
         order = [["name", "ASC"]];
         break;
       case "oldContent":
-        order = [["postDate", "ASC"]];
+        order = [["createdAt", "ASC"]];
         break;
       case "mostRecent":
       default:
-        order = [["postDate", "DESC"]];
+        order = [["createdAt", "DESC"]];
         break;
     }
 
@@ -135,7 +167,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/:id', encryptResponse, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vipContent = await Vip.findByPk(id);
+    if (!vipContent) {
+      return res.status(404).json({ error: 'Conteúdo VIP não encontrado' });
+    }
+    res.status(200).json(vipContent);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar o conteúdo VIP: ' + error.message });
+  }
+});
 
+// POST, PUT, DELETE não codificados
 router.post('/:id/views', async (req, res) => {
   try {
     const { id } = req.params;
@@ -180,23 +225,10 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const vipContent = await Vip.findByPk(id);
-    if (!vipContent) {
-      return res.status(404).json({ error: 'Conteúdo VIP não encontrado' });
-    }
-    res.status(200).json(vipContent);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar o conteúdo VIP: ' + error.message });
-  }
-});
-
 router.put('/:id', isAdmin, verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, link, category, postDate, slug } = req.body;
+    const { name, link, category, createdAt, slug } = req.body;
 
     const vipContentToUpdate = await Vip.findByPk(id);
     if (!vipContentToUpdate) {
@@ -206,7 +238,7 @@ router.put('/:id', isAdmin, verifyToken, async (req, res) => {
     vipContentToUpdate.name = name;
     vipContentToUpdate.link = link;
     vipContentToUpdate.category = category || vipContentToUpdate.category;
-    vipContentToUpdate.postDate = postDate || vipContentToUpdate.postDate;
+    vipContentToUpdate.createdAt = createdAt || vipContentToUpdate.createdAt;
 
     if (slug && slug !== vipContentToUpdate.slug) {
       const existingVipWithNewSlug = await Vip.findOne({ where: { slug } });
