@@ -184,8 +184,9 @@ router.get('/dashboard', Authmiddleware, async (req, res) => {
             isAdmin: user.isAdmin,
             vipExpirationDate: user.vipExpirationDate,
             lastLogin: user.lastLogin,
+            stripeSubscriptionId: user.stripeSubscriptionId,
             recentlyViewed: user.recentlyViewed,
-            createdAt: user.createdAt
+            createdAt: user.createdAt,
         });
     } catch (error) {
         console.error(error);
