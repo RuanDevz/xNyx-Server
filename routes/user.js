@@ -37,7 +37,7 @@ router.post('/cancel-subscription', async (req, res) => {
   
       await user.update({
         isVip: false,
-        stripeSubscriptionId: 'Cancelled',
+        stripeSubscriptionId: null,
       });
   
       res.status(200).json({
@@ -49,6 +49,30 @@ router.post('/cancel-subscription', async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+  router.delete('/delete-account/:email', Authmiddleware, async (req, res) => {
+    const { email } = req.params;
+    const loggedInUserId = req.user.id;
+
+    try {
+        const user = await User.findOne({ where: { email } });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado!' });
+        }
+
+        if (user.id !== loggedInUserId) {
+            return res.status(403).json({ error: 'Você não tem permissão para excluir essa conta.' });
+        }
+
+        await user.destroy();
+
+        res.status(200).json({ message: 'Conta deletada com sucesso!' });
+    } catch (error) {
+        console.error("Erro ao deletar conta:", error);
+        res.status(500).json({ error: 'Erro interno ao deletar conta.' });
+    }
+});
 
 router.get('/status', Authmiddleware, async (req, res) => {
     const userId = req.user.id;
