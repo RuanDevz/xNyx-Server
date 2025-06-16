@@ -34,8 +34,8 @@ router.post('/vip-payment', async (req, res) => {
               },
             ],
             mode: 'subscription',
-            success_url: `${process.env.FRONTEND_URL}/#/success`,
-            cancel_url: `${process.env.FRONTEND_URL}/#/cancel`,
+            success_url: `${process.env.FRONTEND_URL}/success`,
+            cancel_url: `${process.env.FRONTEND_URL}/cancel`,
             metadata: {
               priceId: prices[planType],
             },
