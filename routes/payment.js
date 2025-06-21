@@ -1,6 +1,6 @@
 const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const sendConfirmationEmail = require('../services/Emailsend');
+const sendConfirmationEmail = require('../Services/Emailsend');
 const { User } = require('../models');
 
 const router = express.Router();
