@@ -3,7 +3,7 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { User } = require('../models');
 const bodyParser = require('body-parser');
-const sendConfirmationEmail = require('../services/Emailsend')
+const sendConfirmationEmail = require('../Services/Emailsend')
 
 router.post(
   '/',
