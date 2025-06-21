@@ -1,86 +1,136 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const db = require("../models"); 
+const { sendRequestApprovedEmail } = require('../Services/Emailsend');
 
-router.post("/", async (req, res) => {
-  const { title, description, email } = req.body;
+// Simulação de banco de dados em memória (substitua pela sua implementação real)
+let recommendations = [];
+let nextId = 1;
 
-  if (!title || !description) {
-    return res.status(400).json({ message: "Title and description are required." });
-  }
-this.arguments
+// GET - Listar todas as recomendações
+router.get('/', async (req, res) => {
   try {
-    const recommendation = await db.Recommendation.create({
+    res.status(200).json(recommendations);
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    res.status(500).json({ error: 'Error fetching recommendations' });
+  }
+});
+
+// POST - Criar nova recomendação
+router.post('/', async (req, res) => {
+  try {
+    const { title, description, email } = req.body;
+
+    if (!title || !description || !email) {
+      return res.status(400).json({ error: 'Title, description, and email are required' });
+    }
+
+    const newRecommendation = {
+      id: nextId++,
       title,
       description,
       email,
-      status: "pending",
-    });
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    recommendations.push(newRecommendation);
 
     res.status(201).json({
-      message: "Recommendation submitted successfully.",
-      recommendation,
+      message: 'Recommendation submitted successfully',
+      recommendation: newRecommendation
     });
   } catch (error) {
-    console.error("Error submitting recommendation:", error);
-    res.status(500).json({ message: "There was an error submitting your recommendation." });
+    console.error('Error creating recommendation:', error);
+    res.status(500).json({ error: 'Error creating recommendation' });
   }
 });
 
-router.get("/", async (req, res) => {
+// POST - Aprovar recomendação
+router.post('/:id/approve', async (req, res) => {
   try {
-    const recommendations = await db.Recommendation.findAll();
+    const { id } = req.params;
+    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
 
-    res.status(200).json(recommendations);
-  } catch (error) {
-    console.error("Error fetching recommendations:", error);
-    res.status(500).json({ message: "There was an error fetching the recommendations." });
-  }
-});
-
-router.post("/:id/approve", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const recommendation = await db.Recommendation.findByPk(id);
-
-    if (!recommendation) {
-      return res.status(404).json({ message: "Recommendation not found" });
+    if (recommendationIndex === -1) {
+      return res.status(404).json({ error: 'Recommendation not found' });
     }
 
-    recommendation.status = 'approved';
-    await recommendation.save();
+    const recommendation = recommendations[recommendationIndex];
+    
+    // Atualizar status
+    recommendations[recommendationIndex] = {
+      ...recommendation,
+      status: 'approved',
+      approvedAt: new Date().toISOString()
+    };
+
+    // Enviar email de aprovação
+    try {
+      await sendRequestApprovedEmail(recommendation.email, recommendation.title);
+      console.log(`Approval email sent to ${recommendation.email} for request: ${recommendation.title}`);
+    } catch (emailError) {
+      console.error('Error sending approval email:', emailError);
+      // Não falhar a operação se o email não for enviado
+    }
 
     res.status(200).json({
-      message: "Recommendation approved successfully.",
-      recommendation,
+      message: 'Recommendation approved successfully',
+      recommendation: recommendations[recommendationIndex]
     });
   } catch (error) {
-    console.error("Error approving recommendation:", error);
-    res.status(500).json({ message: "There was an error approving the recommendation." });
+    console.error('Error approving recommendation:', error);
+    res.status(500).json({ error: 'Error approving recommendation' });
   }
 });
 
-router.post("/:id/reject", async (req, res) => {
-  const { id } = req.params;
-
+// POST - Rejeitar recomendação
+router.post('/:id/reject', async (req, res) => {
   try {
-    const recommendation = await db.Recommendation.findByPk(id);
+    const { id } = req.params;
+    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
 
-    if (!recommendation) {
-      return res.status(404).json({ message: "Recommendation not found" });
+    if (recommendationIndex === -1) {
+      return res.status(404).json({ error: 'Recommendation not found' });
     }
 
-    recommendation.status = 'rejected';
-    await recommendation.save();
+    const recommendation = recommendations[recommendationIndex];
+    
+    // Atualizar status
+    recommendations[recommendationIndex] = {
+      ...recommendation,
+      status: 'rejected',
+      rejectedAt: new Date().toISOString()
+    };
 
     res.status(200).json({
-      message: "Recommendation rejected successfully.",
-      recommendation,
+      message: 'Recommendation rejected successfully',
+      recommendation: recommendations[recommendationIndex]
     });
   } catch (error) {
-    console.error("Error rejecting recommendation:", error);
-    res.status(500).json({ message: "There was an error rejecting the recommendation." });
+    console.error('Error rejecting recommendation:', error);
+    res.status(500).json({ error: 'Error rejecting recommendation' });
+  }
+});
+
+// DELETE - Deletar recomendação
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
+
+    if (recommendationIndex === -1) {
+      return res.status(404).json({ error: 'Recommendation not found' });
+    }
+
+    recommendations.splice(recommendationIndex, 1);
+
+    res.status(200).json({
+      message: 'Recommendation deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting recommendation:', error);
+    res.status(500).json({ error: 'Error deleting recommendation' });
   }
 });
 

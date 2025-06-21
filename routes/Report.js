@@ -3,6 +3,7 @@ const router = express.Router();
 const { Report, Free, Vip, User } = require('../models');
 const verifyToken = require('../Middleware/verifyToken');
 const isAdmin = require('../Middleware/isAdmin');
+const { sendReportResolvedEmail } = require('../Services/Emailsend');
 
 // Função para codificar resposta: base64 + inserção de letras alternadas
 function encodeResponse(data) {
@@ -76,7 +77,7 @@ router.post('/', verifyToken, async (req, res) => {
       userId,
       contentId,
       contentType,
-      reason: reason || 'Link não funcionando',
+      reason: reason || 'Link not working',
       reportedAt: new Date()
     });
 
@@ -91,6 +92,7 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
+// GET - Listar todos os reports para admin (codificado)
 router.get('/', verifyToken, isAdmin, encryptResponse, async (req, res) => {
   try {
     const { page = 1, limit = 20, resolved } = req.query;
@@ -101,6 +103,7 @@ router.get('/', verifyToken, isAdmin, encryptResponse, async (req, res) => {
       whereClause.resolved = resolved === 'true';
     }
 
+    // Primeiro buscar os reports sem include para evitar erro de associação
     const reportsData = await Report.findAndCountAll({
       where: whereClause,
       order: [['reportedAt', 'DESC']],
@@ -108,16 +111,19 @@ router.get('/', verifyToken, isAdmin, encryptResponse, async (req, res) => {
       offset: parseInt(offset)
     });
 
+    // Buscar informações do usuário e conteúdo para cada report manualmente
     const reportsWithDetails = await Promise.all(
       reportsData.rows.map(async (report) => {
         let user = null;
         let content = null;
 
         try {
+          // Buscar usuário
           user = await User.findByPk(report.userId, {
             attributes: ['id', 'name', 'email']
           });
 
+          // Buscar conteúdo
           if (report.contentType === 'free') {
             content = await Free.findByPk(report.contentId, {
               attributes: ['id', 'name', 'slug', 'category']
@@ -155,6 +161,7 @@ router.get('/', verifyToken, isAdmin, encryptResponse, async (req, res) => {
   }
 });
 
+// PUT - Marcar report como resolvido (não codificado)
 router.put('/:id/resolve', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -164,9 +171,51 @@ router.put('/:id/resolve', verifyToken, isAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Report não encontrado' });
     }
 
+    // Buscar informações do usuário e conteúdo para o email
+    let user = null;
+    let content = null;
+
+    try {
+      // Buscar usuário
+      user = await User.findByPk(report.userId, {
+        attributes: ['id', 'name', 'email']
+      });
+
+      // Buscar conteúdo
+      if (report.contentType === 'free') {
+        content = await Free.findByPk(report.contentId, {
+          attributes: ['id', 'name', 'slug', 'category']
+        });
+      } else if (report.contentType === 'vip') {
+        content = await Vip.findByPk(report.contentId, {
+          attributes: ['id', 'name', 'slug', 'category']
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes para email:', error);
+    }
+
+    // Atualizar report
     report.resolved = true;
     report.resolvedAt = new Date();
     await report.save();
+
+    // Enviar email de resolução se temos as informações necessárias
+    if (user && user.email && content) {
+      try {
+        await sendReportResolvedEmail(
+          user.email, 
+          content.name, 
+          report.reason,
+          content.slug,
+          report.contentType
+        );
+        console.log(`Resolution email sent to ${user.email} for content: ${content.name}`);
+      } catch (emailError) {
+        console.error('Error sending resolution email:', emailError);
+        // Não falhar a operação se o email não for enviado
+      }
+    }
 
     res.status(200).json({
       message: 'Report marcado como resolvido',
@@ -179,6 +228,7 @@ router.put('/:id/resolve', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// DELETE - Deletar report (não codificado)
 router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;

@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     reason: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: "Link não funcionando",
+      defaultValue: "Link not working",
     },
     reportedAt: {
       type: DataTypes.DATE,
