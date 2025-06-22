@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { sendRequestApprovedEmail } = require('../Services/Emailsend');
-
-// Simulação de banco de dados em memória (substitua pela sua implementação real)
-let recommendations = [];
-let nextId = 1;
+const db = require("../models");
+const Recommendation = db.Recommendation;
 
 // GET - Listar todas as recomendações
 router.get('/', async (req, res) => {
   try {
+    const recommendations = await Recommendation.findAll({ order: [['createdAt', 'DESC']] });
     res.status(200).json(recommendations);
   } catch (error) {
     console.error('Error fetching recommendations:', error);
@@ -25,16 +24,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Title, description, and email are required' });
     }
 
-    const newRecommendation = {
-      id: nextId++,
+    const newRecommendation = await Recommendation.create({
       title,
       description,
       email,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    recommendations.push(newRecommendation);
+      status: 'pending'
+    });
 
     res.status(201).json({
       message: 'Recommendation submitted successfully',
@@ -50,33 +45,26 @@ router.post('/', async (req, res) => {
 router.post('/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
-    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
 
-    if (recommendationIndex === -1) {
+    const recommendation = await Recommendation.findByPk(id);
+    if (!recommendation) {
       return res.status(404).json({ error: 'Recommendation not found' });
     }
 
-    const recommendation = recommendations[recommendationIndex];
-    
-    // Atualizar status
-    recommendations[recommendationIndex] = {
-      ...recommendation,
-      status: 'approved',
-      approvedAt: new Date().toISOString()
-    };
+    recommendation.status = 'approved';
+    recommendation.approvedAt = new Date();
+    await recommendation.save();
 
-    // Enviar email de aprovação
     try {
       await sendRequestApprovedEmail(recommendation.email, recommendation.title);
-      console.log(`Approval email sent to ${recommendation.email} for request: ${recommendation.title}`);
+      console.log(`Approval email sent to ${recommendation.email}`);
     } catch (emailError) {
       console.error('Error sending approval email:', emailError);
-      // Não falhar a operação se o email não for enviado
     }
 
     res.status(200).json({
       message: 'Recommendation approved successfully',
-      recommendation: recommendations[recommendationIndex]
+      recommendation
     });
   } catch (error) {
     console.error('Error approving recommendation:', error);
@@ -88,24 +76,19 @@ router.post('/:id/approve', async (req, res) => {
 router.post('/:id/reject', async (req, res) => {
   try {
     const { id } = req.params;
-    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
 
-    if (recommendationIndex === -1) {
+    const recommendation = await Recommendation.findByPk(id);
+    if (!recommendation) {
       return res.status(404).json({ error: 'Recommendation not found' });
     }
 
-    const recommendation = recommendations[recommendationIndex];
-    
-    // Atualizar status
-    recommendations[recommendationIndex] = {
-      ...recommendation,
-      status: 'rejected',
-      rejectedAt: new Date().toISOString()
-    };
+    recommendation.status = 'rejected';
+    recommendation.rejectedAt = new Date();
+    await recommendation.save();
 
     res.status(200).json({
       message: 'Recommendation rejected successfully',
-      recommendation: recommendations[recommendationIndex]
+      recommendation
     });
   } catch (error) {
     console.error('Error rejecting recommendation:', error);
@@ -117,13 +100,12 @@ router.post('/:id/reject', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const recommendationIndex = recommendations.findIndex(r => r.id === parseInt(id));
-
-    if (recommendationIndex === -1) {
+    const recommendation = await Recommendation.findByPk(id);
+    if (!recommendation) {
       return res.status(404).json({ error: 'Recommendation not found' });
     }
 
-    recommendations.splice(recommendationIndex, 1);
+    await recommendation.destroy();
 
     res.status(200).json({
       message: 'Recommendation deleted successfully'
