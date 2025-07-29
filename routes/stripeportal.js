@@ -4,7 +4,6 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { User } = require('../models');
 const Authmiddleware = require('../Middleware/Auth');
 
-// Criar sessão do Customer Portal
 router.post('/create-portal-session', Authmiddleware, async (req, res) => {
   try {
     const decodedUser = req.user;
