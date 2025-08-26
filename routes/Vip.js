@@ -206,6 +206,10 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     const createdContents = [];
 
     for (const content of vipContents) {
+      if (!content.name) {
+        return res.status(400).json({ error: 'O campo "name" é obrigatório.' });
+      }
+
       if (!content.slug) {
         return res.status(400).json({ error: 'O campo "slug" é obrigatório.' });
       }
