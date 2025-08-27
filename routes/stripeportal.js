@@ -38,7 +38,7 @@ router.post('/create-portal-session', Authmiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar sessão do portal:', error);
     return res.status(500).json({ 
-      error: 'Erro interno do servidor ao criar sessão do portal'
+      error: 'Internal Error'
     });
   }
 });
