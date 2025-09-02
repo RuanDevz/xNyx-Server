@@ -101,6 +101,7 @@ const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
 });
 
+app.set('trust proxy', true);
 pool.connect((err, client, done) => {
   if (err) {
     console.error('Erro ao conectar ao banco de dados:', err);
