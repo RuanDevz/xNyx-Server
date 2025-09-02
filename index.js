@@ -1,28 +1,17 @@
 const express = require('express');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
 
-// Middlewares básicos
 app.use(cors());
 
-// Rota webhook sem json parser
 const webhookRouter = require('./routes/webhook');
 app.use('/webhook', webhookRouter);
 
-// Usar JSON parser para todas as demais rotas
 app.use(express.json());
 
-// Proteção contra abuso de requisições
-const limiter = rateLimit({
-  windowMs: 15 * 80 * 1000,
-  max: 100,
-  message: 'IP Blocked.',
-});
-app.use(limiter);
 
 // Bloquear bots e agentes suspeitos
 app.use((req, res, next) => {
