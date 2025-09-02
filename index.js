@@ -4,13 +4,13 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
+app.use(express.json());
 
 app.use(cors());
 
 const webhookRouter = require('./routes/webhook');
 app.use('/webhook', webhookRouter);
 
-app.use(express.json());
 
 
 // Bloquear bots e agentes suspeitos
